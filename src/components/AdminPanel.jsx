@@ -1,0 +1,311 @@
+import React, { useState } from 'react';
+import { PlusCircle, Lock, Upload } from 'lucide-react';
+
+export function AdminPanel({ onAddProduct }) {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
+    const [loginError, setLoginError] = useState('');
+
+    const [formData, setFormData] = useState({
+        name: '',
+        price: '',
+        category: 'Poshak',
+        image: '',
+        description: ''
+    });
+
+    const handleLogin = (e) => {
+        e.preventDefault();
+        // Hardcoded password for demonstration
+        if (passwordInput === 'admin123') {
+            setIsAuthenticated(true);
+            setLoginError('');
+        } else {
+            setLoginError('Invalid access code');
+        }
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData({ ...formData, image: reader.result });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.name || !formData.price) return;
+
+        // Use a placeholder image if none provided
+        const newProduct = {
+            ...formData,
+            id: Date.now(),
+            image: formData.image || 'https://images.unsplash.com/photo-1628882835978-29938b823b16?w=500&auto=format&fit=crop&q=60' // generic devotional placeholder
+        };
+
+        onAddProduct(newProduct);
+        setFormData({ name: '', price: '', category: 'Poshak', image: '', description: '' });
+        alert('Product added successfully!');
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <div className="admin-panel">
+                <div className="container">
+                    <div className="admin-card login-card">
+                        <div className="admin-header">
+                            <Lock size={24} color="white" />
+                            <h3>Admin Access</h3>
+                        </div>
+                        <form onSubmit={handleLogin}>
+                            <div className="form-group">
+                                <label>Enter Security Code</label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter passcode"
+                                    value={passwordInput}
+                                    onChange={e => setPasswordInput(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            {loginError && <p className="error-msg">{loginError}</p>}
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                                Login
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <style>{`
+                    .admin-panel {
+                        background-color: var(--color-text-main);
+                        padding: 2rem 0;
+                        color: white;
+                        margin-bottom: 2rem;
+                    }
+                    .admin-card {
+                        background: rgba(255,255,255,0.1);
+                        padding: 2rem;
+                        border-radius: var(--radius-lg);
+                        max-width: 600px;
+                        margin: 0 auto;
+                        backdrop-filter: blur(5px);
+                    }
+                    .login-card {
+                        max-width: 400px;
+                    }
+                    .admin-header {
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        margin-bottom: 2rem;
+                        border-bottom: 1px solid rgba(255,255,255,0.2);
+                        padding-bottom: 1rem;
+                    }
+                    .form-group {
+                        margin-bottom: 1rem;
+                    }
+                    .error-msg {
+                        color: #ff6b6b;
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                        text-align: center;
+                    }
+                    label {
+                        display: block;
+                        margin-bottom: 0.5rem;
+                        font-size: 0.9rem;
+                        color: #ddd;
+                    }
+                    input, select, textarea {
+                        width: 100%;
+                        padding: 0.75rem;
+                        border-radius: var(--radius-md);
+                        border: 1px solid rgba(255,255,255,0.2);
+                        background: rgba(0,0,0,0.2);
+                        color: white;
+                        font-family: inherit;
+                    }
+                    input:focus {
+                        outline: 2px solid var(--color-primary);
+                        border-color: transparent;
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
+    return (
+        <div className="admin-panel">
+            <div className="container">
+                <div className="admin-card">
+                    <div className="admin-header">
+                        <PlusCircle size={24} color="white" />
+                        <h3>Add New Product</h3>
+                    </div>
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>Product Name</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Blue Velvet Poshak"
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Price (₹)</label>
+                                <input
+                                    type="number"
+                                    placeholder="e.g. 500"
+                                    value={formData.price}
+                                    onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Category</label>
+                                <select
+                                    value={formData.category}
+                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                >
+                                    <option>Poshak</option>
+                                    <option>Accessories</option>
+                                    <option>Idols</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* File Upload Section */}
+                        <div className="form-group">
+                            <label>Product Image</label>
+                            <div className="file-upload-wrapper">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    id="imageUpload"
+                                    onChange={handleImageChange}
+                                    className="file-input"
+                                />
+                                <label htmlFor="imageUpload" className="file-label">
+                                    <Upload size={20} />
+                                    <span>{formData.image ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
+                                </label>
+                            </div>
+                            
+                            {formData.image && (
+                                <div className="image-preview">
+                                    <img src={formData.image} alt="Preview" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea
+                                rows="3"
+                                placeholder="Product details..."
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            ></textarea>
+                        </div>
+
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Add Product</button>
+                    </form>
+                </div>
+            </div>
+            <style>{`
+        .admin-panel {
+          background-color: var(--color-text-main);
+          padding: 2rem 0;
+          color: white;
+          margin-bottom: 2rem;
+        }
+        .admin-card {
+          background: rgba(255,255,255,0.1);
+          padding: 2rem;
+          border-radius: var(--radius-lg);
+          max-width: 600px;
+          margin: 0 auto;
+          backdrop-filter: blur(5px);
+        }
+        .admin-header {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 2rem;
+          border-bottom: 1px solid rgba(255,255,255,0.2);
+          padding-bottom: 1rem;
+        }
+        .form-group {
+          margin-bottom: 1rem;
+        }
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-size: 0.9rem;
+          color: #ddd;
+        }
+        input, select, textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(255,255,255,0.2);
+          background: rgba(0,0,0,0.2);
+          color: white;
+          font-family: inherit;
+        }
+        input:focus {
+          outline: 2px solid var(--color-primary);
+          border-color: transparent;
+        }
+        
+        /* File Upload Styles */
+        .file-input {
+            display: none;
+        }
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.1);
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-label:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: var(--color-primary);
+        }
+        .image-preview {
+            margin-top: 1rem;
+            width: 100%;
+            height: 200px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: rgba(0,0,0,0.2);
+        }
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+      `}</style>
+        </div>
+    );
+}
