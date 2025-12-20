@@ -11,6 +11,7 @@ export function AdminPanel({ onAddProduct }) {
     const [formData, setFormData] = useState({
         name: '',
         price: '',
+        discount: '0',
         category: 'Poshak',
         imageFile: null, // Store file object instead of base64
         preview: '',     // Store preview URL
@@ -72,6 +73,7 @@ export function AdminPanel({ onAddProduct }) {
                     {
                         name: formData.name,
                         price: parseFloat(formData.price),
+                        discount: parseInt(formData.discount) || 0,
                         category: formData.category,
                         description: formData.description,
                         image: imageUrl
@@ -83,7 +85,7 @@ export function AdminPanel({ onAddProduct }) {
 
             if (data && data.length > 0) {
                 onAddProduct(data[0]);
-                setFormData({ name: '', price: '', category: 'Poshak', imageFile: null, preview: '', description: '' });
+                setFormData({ name: '', price: '', discount: '0', category: 'Poshak', imageFile: null, preview: '', description: '' });
                 alert('Success! Product added to Kanha Poshak Bhandar database.');
             }
 
@@ -212,67 +214,77 @@ export function AdminPanel({ onAddProduct }) {
                                     required
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Category</label>
-                                <select
-                                    value={formData.category}
-                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                >
-                                    <option>Poshak</option>
-                                    <option>Accessories</option>
-                                    <option>Idols</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
+                            <label>Discount (%)</label>
+                            <input
+                                type="number"
+                                placeholder="e.g. 10"
+                                min="0"
+                                max="99"
+                                value={formData.discount}
+                                onChange={e => setFormData({ ...formData, discount: e.target.value })}
+                            />
                         </div>
-
-                        {/* File Upload Section */}
                         <div className="form-group">
-                            <label>Product Image</label>
-                            <div className="file-upload-wrapper">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    id="imageUpload"
-                                    onChange={handleImageChange}
-                                    className="file-input"
-                                />
-                                <label htmlFor="imageUpload" className="file-label">
-                                    <Upload size={20} />
-                                    <span>{formData.preview ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
-                                </label>
-                            </div>
-
-                            {formData.preview && (
-                                <div className="image-preview">
-                                    <img src={formData.preview} alt="Preview" />
-                                </div>
-                            )}
+                            <label>Category</label>
+                            <select
+                                value={formData.category}
+                                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                            >
+                                <option>Poshak</option>
+                                <option>Accessories</option>
+                                <option>Idols</option>
+                                <option>Other</option>
+                            </select>
                         </div>
-
-                        <div className="form-group">
-                            <label>Description</label>
-                            <textarea
-                                rows="3"
-                                placeholder="Product details..."
-                                value={formData.description}
-                                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                            ></textarea>
-                        </div>
-
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={uploading}>
-                            {uploading ? (
-                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                    <Loader className="spin" size={20} /> Uploading...
-                                </span>
-                            ) : (
-                                'Add Product to Shop'
-                            )}
-                        </button>
-                    </form>
                 </div>
-            </div>
-            <style>{`
+
+                {/* File Upload Section */}
+                <div className="form-group">
+                    <label>Product Image</label>
+                    <div className="file-upload-wrapper">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            id="imageUpload"
+                            onChange={handleImageChange}
+                            className="file-input"
+                        />
+                        <label htmlFor="imageUpload" className="file-label">
+                            <Upload size={20} />
+                            <span>{formData.preview ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
+                        </label>
+                    </div>
+
+                    {formData.preview && (
+                        <div className="image-preview">
+                            <img src={formData.preview} alt="Preview" />
+                        </div>
+                    )}
+                </div>
+
+                <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                        rows="3"
+                        placeholder="Product details..."
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                    ></textarea>
+                </div>
+
+                <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={uploading}>
+                    {uploading ? (
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <Loader className="spin" size={20} /> Uploading...
+                        </span>
+                    ) : (
+                        'Add Product to Shop'
+                    )}
+                </button>
+            </form>
+        </div>
+            </div >
+        <style>{`
         .admin-panel {
           background-color: var(--color-text-main);
           padding: 2rem 0;
@@ -300,7 +312,7 @@ export function AdminPanel({ onAddProduct }) {
         }
         .form-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 1rem;
         }
         label {
@@ -365,6 +377,6 @@ export function AdminPanel({ onAddProduct }) {
             to { transform: rotate(360deg); }
         }
       `}</style>
-        </div>
+        </div >
     );
 }

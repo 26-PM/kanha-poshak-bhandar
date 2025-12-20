@@ -57,6 +57,11 @@ function App() {
     }
   };
 
+  const getOriginalPrice = (price, discount) => {
+    if (!discount) return null;
+    return Math.round(price / (1 - discount / 100));
+  };
+
   return (
     <div className="app">
       <Header toggleAdmin={() => setShowAdmin(!showAdmin)} showAdmin={showAdmin} />
@@ -89,6 +94,9 @@ function App() {
                 <div className="card-image">
                   <img src={product.image} alt={product.name} />
                   <div className="card-badge">{product.category}</div>
+                  {product.discount > 0 && (
+                    <div className="discount-badge">-{product.discount}%</div>
+                  )}
                   {showAdmin && (
                     <button
                       className="delete-btn"
@@ -106,7 +114,12 @@ function App() {
                   <h3>{product.name}</h3>
                   <p className="description">{product.description}</p>
                   <div className="card-footer">
-                    <span className="price">₹{product.price}</span>
+                    <div className="price-container">
+                      {product.discount > 0 && (
+                        <span className="original-price">₹{getOriginalPrice(product.price, product.discount)}</span>
+                      )}
+                      <span className="price">₹{product.price}</span>
+                    </div>
                     <button className="btn btn-primary" onClick={() => alert('Order functionality coming soon! Visit our shop at Badshahpur Main Bazar.')}>
                       Enquire
                     </button>
@@ -193,11 +206,22 @@ function App() {
           font-weight: 600;
           color: var(--color-text-main);
         }
+        .discount-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: #d63031;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
         
         .delete-btn {
             position: absolute;
-            top: 1rem;
-            left: 1rem; /* opposite side of badge */
+            bottom: 1rem;
+            right: 1rem;
             background: #ff4757;
             color: white;
             border: none;
@@ -236,6 +260,16 @@ function App() {
           justify-content: space-between;
           align-items: center;
           margin-top: auto;
+        }
+        .price-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .original-price {
+            font-size: 0.9rem;
+            text-decoration: line-through;
+            color: #999;
+            font-weight: 500;
         }
         .price {
           font-size: 1.5rem;
