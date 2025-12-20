@@ -1,6 +1,5 @@
 import React from 'react';
 import { supabase } from './supabase';
-import { supabase } from './supabase';
 import { Trash2, ShoppingCart, Instagram, MapPin } from 'lucide-react';
 // import { initialProducts } from './data'; // Deprecated
 
