@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { PlusCircle, Lock, Upload } from 'lucide-react';
+import { PlusCircle, Lock, Upload, Loader } from 'lucide-react';
+import { supabase } from '../supabase';
 
 export function AdminPanel({ onAddProduct }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
     const [loginError, setLoginError] = useState('');
+    const [uploading, setUploading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
         price: '',
         category: 'Poshak',
-        image: '',
+        imageFile: null, // Store file object instead of base64
+        preview: '',     // Store preview URL
         description: ''
     });
 
@@ -28,28 +31,68 @@ export function AdminPanel({ onAddProduct }) {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, image: reader.result });
-            };
-            reader.readAsDataURL(file);
+            setFormData({
+                ...formData,
+                imageFile: file,
+                preview: URL.createObjectURL(file)
+            });
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name || !formData.price) return;
 
-        // Use a placeholder image if none provided
-        const newProduct = {
-            ...formData,
-            id: Date.now(),
-            image: formData.image || 'https://images.unsplash.com/photo-1628882835978-29938b823b16?w=500&auto=format&fit=crop&q=60' // generic devotional placeholder
-        };
+        setUploading(true);
+        try {
+            let imageUrl = 'https://images.unsplash.com/photo-1628882835978-29938b823b16?w=500&auto=format&fit=crop&q=60';
 
-        onAddProduct(newProduct);
-        setFormData({ name: '', price: '', category: 'Poshak', image: '', description: '' });
-        alert('Product added successfully!');
+            // 1. Upload Image if exists
+            if (formData.imageFile) {
+                const fileExt = formData.imageFile.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('products')
+                    .upload(fileName, formData.imageFile);
+
+                if (uploadError) throw uploadError;
+
+                // 2. Get Public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('products')
+                    .getPublicUrl(fileName);
+
+                imageUrl = publicUrl;
+            }
+
+            // 3. Insert into Database
+            const { data, error: dbError } = await supabase
+                .from('products')
+                .insert([
+                    {
+                        name: formData.name,
+                        price: parseFloat(formData.price),
+                        category: formData.category,
+                        description: formData.description,
+                        image: imageUrl
+                    }
+                ])
+                .select();
+
+            if (dbError) throw dbError;
+
+            if (data && data.length > 0) {
+                onAddProduct(data[0]);
+                setFormData({ name: '', price: '', category: 'Poshak', imageFile: null, preview: '', description: '' });
+                alert('Success! Product added to Kanha Poshak Bhandar database.');
+            }
+
+        } catch (error) {
+            console.error('Error adding product:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setUploading(false);
+        }
     };
 
     if (!isAuthenticated) {
@@ -196,13 +239,13 @@ export function AdminPanel({ onAddProduct }) {
                                 />
                                 <label htmlFor="imageUpload" className="file-label">
                                     <Upload size={20} />
-                                    <span>{formData.image ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
+                                    <span>{formData.preview ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
                                 </label>
                             </div>
-                            
-                            {formData.image && (
+
+                            {formData.preview && (
                                 <div className="image-preview">
-                                    <img src={formData.image} alt="Preview" />
+                                    <img src={formData.preview} alt="Preview" />
                                 </div>
                             )}
                         </div>
@@ -217,7 +260,15 @@ export function AdminPanel({ onAddProduct }) {
                             ></textarea>
                         </div>
 
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Add Product</button>
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={uploading}>
+                            {uploading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <Loader className="spin" size={20} /> Uploading...
+                                </span>
+                            ) : (
+                                'Add Product to Shop'
+                            )}
+                        </button>
                     </form>
                 </div>
             </div>
@@ -299,11 +350,19 @@ export function AdminPanel({ onAddProduct }) {
             border-radius: var(--radius-md);
             overflow: hidden;
             background: rgba(0,0,0,0.2);
+            object-fit: contain;
         }
         .image-preview img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
       `}</style>
         </div>
