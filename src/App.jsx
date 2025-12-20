@@ -1,6 +1,7 @@
 import React from 'react';
 import { supabase } from './supabase';
-import { Trash2 } from 'lucide-react';
+import { supabase } from './supabase';
+import { Trash2, ShoppingCart, Instagram, MapPin } from 'lucide-react';
 // import { initialProducts } from './data'; // Deprecated
 
 import { Header } from './components/Header';
@@ -12,6 +13,7 @@ function App() {
   const [loading, setLoading] = React.useState(true);
   const [showAdmin, setShowAdmin] = React.useState(false);
   const [filter, setFilter] = React.useState('All');
+  const [cart, setCart] = React.useState([]);
 
   React.useEffect(() => {
     fetchProducts();
@@ -60,6 +62,29 @@ function App() {
   const getOriginalPrice = (price, discount) => {
     if (!discount) return null;
     return Math.round(price / (1 - discount / 100));
+    return Math.round(price / (1 - discount / 100));
+  };
+
+  const addToCart = (product) => {
+    setCart([...cart, product]);
+    alert(`${product.name} added to cart!`);
+  };
+
+  const checkoutWhatsApp = () => {
+    const phoneNumber = "919891953999"; // Updated Business Number
+    let message = "Namaste Kanha Poshak Bhandar! I would like to order the following sacred items:\n\n";
+
+    let total = 0;
+    cart.forEach((item, index) => {
+      message += `${index + 1}. ${item.name} - ₹${item.price}\n`;
+      total += item.price;
+    });
+
+    message += `\nTotal Amount: ₹${total}`;
+    message += "\n\nPlease confirm availability.";
+
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -120,8 +145,8 @@ function App() {
                       )}
                       <span className="price">₹{product.price}</span>
                     </div>
-                    <button className="btn btn-primary" onClick={() => alert('Order functionality coming soon! Visit our shop at Badshahpur Main Bazar.')}>
-                      Enquire
+                    <button className="btn btn-primary" onClick={() => addToCart(product)}>
+                      Add to Cart
                     </button>
                   </div>
                 </div>
@@ -133,10 +158,30 @@ function App() {
 
       <footer className="footer">
         <div className="container">
-          <p>&copy; 2024 Kanha Poshak Bhandar. Badshahpur Main Bazar, Gurugram.</p>
-          <p className="footer-note">Serving the Divine since 2010.</p>
+          <h3>Kanha Poshak Bhandar</h3>
+          <p className="address">
+            <a href="https://maps.app.goo.gl/M9b8FMKQS4HM3not5?g_st=aw" target="_blank" rel="noreferrer" className="address-link">
+              <MapPin size={16} />
+              <span>Visit us: Kanha Poshak Bhandar, Badshahpur Main Bazar</span>
+            </a>
+          </p>
+
+          <div className="social-links">
+            <a href="https://www.instagram.com/_kanha_poshak_bhandar_?igsh=MWRnMnVrZ2licXIzMw==" target="_blank" rel="noreferrer" className="social-btn">
+              <Instagram size={20} /> Follow us on Instagram
+            </a>
+          </div>
+
+          <p className="footer-note">Serving the Divine since 2010. | Jai Shri Krishna</p>
         </div>
       </footer>
+
+      {cart.length > 0 && (
+        <button className="floating-cart-btn" onClick={checkoutWhatsApp}>
+          <ShoppingCart size={24} />
+          <span>Checkout ({cart.length})</span>
+        </button>
+      )}
 
       <style>{`
         .filters {
@@ -294,6 +339,70 @@ function App() {
           padding: 3rem;
           font-size: 1.2rem;
           color: var(--color-text-light);
+        }
+
+        .floating-cart-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #25D366; /* WhatsApp Green */
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            animation: bounce 2s infinite;
+        }
+        .floating-cart-btn:hover {
+            transform: scale(1.05);
+            background: #20bd5a;
+        }
+
+        .social-links {
+            margin: 1.5rem 0;
+        }
+        .social-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .social-btn:hover {
+            background: #E1306C; /* Insta Gradient base */
+        }
+        .address {
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+        .address-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: white;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .address-link:hover {
+            text-decoration: underline;
+            color: #dff9fb;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
         }
       `}</style>
     </div>

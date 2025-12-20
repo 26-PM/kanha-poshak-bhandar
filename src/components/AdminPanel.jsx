@@ -214,77 +214,78 @@ export function AdminPanel({ onAddProduct }) {
                                     required
                                 />
                             </div>
-                            <label>Discount (%)</label>
-                            <input
-                                type="number"
-                                placeholder="e.g. 10"
-                                min="0"
-                                max="99"
-                                value={formData.discount}
-                                onChange={e => setFormData({ ...formData, discount: e.target.value })}
-                            />
+                            <div className="form-group">
+                                <label>Discount (%)</label>
+                                <input
+                                    type="number"
+                                    placeholder="e.g. 10"
+                                    min="0"
+                                    max="99"
+                                    value={formData.discount}
+                                    onChange={e => setFormData({ ...formData, discount: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Category</label>
+                                <select
+                                    value={formData.category}
+                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                >
+                                    <option>Poshak</option>
+                                    <option>Accessories</option>
+                                    <option>Idols</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
                         </div>
+
+                        {/* File Upload Section */}
                         <div className="form-group">
-                            <label>Category</label>
-                            <select
-                                value={formData.category}
-                                onChange={e => setFormData({ ...formData, category: e.target.value })}
-                            >
-                                <option>Poshak</option>
-                                <option>Accessories</option>
-                                <option>Idols</option>
-                                <option>Other</option>
-                            </select>
+                            <label>Product Image</label>
+                            <div className="file-upload-wrapper">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    id="imageUpload"
+                                    onChange={handleImageChange}
+                                    className="file-input"
+                                />
+                                <label htmlFor="imageUpload" className="file-label">
+                                    <Upload size={20} />
+                                    <span>{formData.preview ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
+                                </label>
+                            </div>
+
+                            {formData.preview && (
+                                <div className="image-preview">
+                                    <img src={formData.preview} alt="Preview" />
+                                </div>
+                            )}
                         </div>
-                </div>
 
-                {/* File Upload Section */}
-                <div className="form-group">
-                    <label>Product Image</label>
-                    <div className="file-upload-wrapper">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            id="imageUpload"
-                            onChange={handleImageChange}
-                            className="file-input"
-                        />
-                        <label htmlFor="imageUpload" className="file-label">
-                            <Upload size={20} />
-                            <span>{formData.preview ? 'Image Selected (Click to change)' : 'Upload from Device'}</span>
-                        </label>
-                    </div>
-
-                    {formData.preview && (
-                        <div className="image-preview">
-                            <img src={formData.preview} alt="Preview" />
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea
+                                rows="3"
+                                placeholder="Product details..."
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            ></textarea>
                         </div>
-                    )}
-                </div>
 
-                <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                        rows="3"
-                        placeholder="Product details..."
-                        value={formData.description}
-                        onChange={e => setFormData({ ...formData, description: e.target.value })}
-                    ></textarea>
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={uploading}>
+                            {uploading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <Loader className="spin" size={20} /> Uploading...
+                                </span>
+                            ) : (
+                                'Add Product to Shop'
+                            )}
+                        </button>
+                    </form>
                 </div>
-
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={uploading}>
-                    {uploading ? (
-                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <Loader className="spin" size={20} /> Uploading...
-                        </span>
-                    ) : (
-                        'Add Product to Shop'
-                    )}
-                </button>
-            </form>
-        </div>
             </div >
-        <style>{`
+            <style>{`
         .admin-panel {
           background-color: var(--color-text-main);
           padding: 2rem 0;
