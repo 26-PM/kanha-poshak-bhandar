@@ -7,12 +7,15 @@ import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { AdminPanel } from './components/AdminPanel';
 
+import { CartDrawer } from './components/CartDrawer';
+
 function App() {
   const [products, setProducts] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [showAdmin, setShowAdmin] = React.useState(false);
   const [filter, setFilter] = React.useState('All');
   const [cart, setCart] = React.useState([]);
+  const [isCartOpen, setIsCartOpen] = React.useState(false);
 
   React.useEffect(() => {
     fetchProducts();
@@ -61,12 +64,38 @@ function App() {
   const getOriginalPrice = (price, discount) => {
     if (!discount) return null;
     return Math.round(price / (1 - discount / 100));
-    return Math.round(price / (1 - discount / 100));
   };
 
   const addToCart = (product) => {
-    setCart([...cart, product]);
-    alert(`${product.name} added to cart!`);
+    setCart(prevCart => {
+      const existing = prevCart.find(item => item.id === product.id);
+      if (existing) {
+        return prevCart.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+    setIsCartOpen(true); // Auto open cart to show feedback
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart(prevCart => prevCart.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }));
+  };
+
+  const removeFromCart = (id) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    setIsCartOpen(false);
   };
 
   const checkoutWhatsApp = () => {
@@ -75,8 +104,9 @@ function App() {
 
     let total = 0;
     cart.forEach((item, index) => {
-      message += `${index + 1}. ${item.name} - ₹${item.price}\n`;
-      total += item.price;
+      const itemTotal = item.price * item.quantity;
+      message += `${index + 1}. ${item.name} (Code: ${item.product_code || 'N/A'}) \n   Qty: ${item.quantity} x ₹${item.price} = ₹${itemTotal}\n`;
+      total += itemTotal;
     });
 
     message += `\nTotal Amount: ₹${total}`;
@@ -136,6 +166,7 @@ function App() {
                 </div>
                 <div className="card-content">
                   <h3>{product.name}</h3>
+                  {product.product_code && <div className="product-code">Code: {product.product_code}</div>}
                   <p className="description">{product.description}</p>
                   <div className="card-footer">
                     <div className="price-container">
@@ -175,10 +206,20 @@ function App() {
         </div>
       </footer>
 
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={cart}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeFromCart}
+        onClearCart={clearCart}
+        onCheckout={checkoutWhatsApp}
+      />
+
       {cart.length > 0 && (
-        <button className="floating-cart-btn" onClick={checkoutWhatsApp}>
+        <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
           <ShoppingCart size={24} />
-          <span>Checkout ({cart.length})</span>
+          <span>View Cart ({cart.reduce((a, c) => a + c.quantity, 0)})</span>
         </button>
       )}
 
@@ -291,7 +332,18 @@ function App() {
         .card-content h3 {
           font-size: 1.25rem;
           margin-bottom: 0.5rem;
+          margin-bottom: 0.5rem;
           color: var(--color-text-main);
+        }
+        .product-code {
+            font-size: 0.8rem;
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: rgba(0,0,0,0.03);
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
         }
         .description {
           font-size: 0.9rem;

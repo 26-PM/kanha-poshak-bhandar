@@ -15,7 +15,8 @@ export function AdminPanel({ onAddProduct }) {
         category: 'Poshak',
         imageFile: null, // Store file object instead of base64
         preview: '',     // Store preview URL
-        description: ''
+        description: '',
+        product_code: ''
     });
 
     const handleLogin = (e) => {
@@ -76,7 +77,8 @@ export function AdminPanel({ onAddProduct }) {
                         discount: parseInt(formData.discount) || 0,
                         category: formData.category,
                         description: formData.description,
-                        image: imageUrl
+                        image: imageUrl,
+                        product_code: formData.product_code
                     }
                 ])
                 .select();
@@ -85,7 +87,7 @@ export function AdminPanel({ onAddProduct }) {
 
             if (data && data.length > 0) {
                 onAddProduct(data[0]);
-                setFormData({ name: '', price: '', discount: '0', category: 'Poshak', imageFile: null, preview: '', description: '' });
+                setFormData({ name: '', price: '', discount: '0', category: 'Poshak', imageFile: null, preview: '', description: '', product_code: '' });
                 alert('Success! Product added to Kanha Poshak Bhandar database.');
             }
 
@@ -199,6 +201,17 @@ export function AdminPanel({ onAddProduct }) {
                                 placeholder="e.g. Blue Velvet Poshak"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Unique Item Code / SKU</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. KPB-001"
+                                value={formData.product_code}
+                                onChange={e => setFormData({ ...formData, product_code: e.target.value })}
                                 required
                             />
                         </div>
