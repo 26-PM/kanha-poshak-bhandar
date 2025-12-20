@@ -16,6 +16,8 @@ function App() {
   const [filter, setFilter] = React.useState('All');
   const [cart, setCart] = React.useState([]);
   const [isCartOpen, setIsCartOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [editingProduct, setEditingProduct] = React.useState(null);
 
   React.useEffect(() => {
     fetchProducts();
@@ -37,12 +39,24 @@ function App() {
   };
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
-  const filteredProducts = filter === 'All'
-    ? products
-    : products.filter(p => p.category === filter);
+
+  // Enhanced filtering with search
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = filter === 'All' || p.category === filter;
+    const matchesSearch = searchQuery === '' ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.product_code && p.product_code.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
 
   const addProduct = (newProduct) => {
     setProducts([newProduct, ...products]);
+  };
+
+  const updateProduct = (updatedProduct) => {
+    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    setEditingProduct(null);
   };
 
   const deleteProduct = async (id) => {
@@ -120,13 +134,42 @@ function App() {
     <div className="app">
       <Header toggleAdmin={() => setShowAdmin(!showAdmin)} showAdmin={showAdmin} />
 
-      {showAdmin && <AdminPanel onAddProduct={addProduct} />}
+      {showAdmin && <AdminPanel
+        onAddProduct={addProduct}
+        onUpdateProduct={updateProduct}
+        editingProduct={editingProduct}
+        onCancelEdit={() => setEditingProduct(null)}
+      />}
 
       <Hero />
 
       <main className="container" id="products">
         <h2 className="section-title">Our Sacred Collection</h2>
 
+        {/* Search Bar */}
+        <div className="search-container">
+          <div className="search-bar">
+            <svg className="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by name, code, or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button className="clear-search" onClick={() => setSearchQuery('')}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM5.354 4.646a.5.5 0 1 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Filters */}
         <div className="filters">
           {categories.map(cat => (
             <button
@@ -139,8 +182,34 @@ function App() {
           ))}
         </div>
 
+        {/* Results Count */}
+        <div className="results-info">
+          <span>{filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found</span>
+        </div>
+
         {loading ? (
           <div className="loading">Loading Sacred Items...</div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <h3>No items found</h3>
+            <p>Try adjusting your search or filter to find what you're looking for.</p>
+            {(searchQuery || filter !== 'All') && (
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilter('All');
+                }}
+                style={{ marginTop: '1rem' }}
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         ) : (
           <div className="product-grid">
             {filteredProducts.map(product => (
@@ -152,16 +221,32 @@ function App() {
                     <div className="discount-badge">-{product.discount}%</div>
                   )}
                   {showAdmin && (
-                    <button
-                      className="delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteProduct(product.id);
-                      }}
-                      title="Delete Item"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <>
+                      <button
+                        className="edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProduct(product);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        title="Edit Item"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteProduct(product.id);
+                        }}
+                        title="Delete Item"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
                   )}
                 </div>
                 <div className="card-content">
@@ -224,6 +309,66 @@ function App() {
       )}
 
       <style>{`
+        /* Search Bar Styles */
+        .search-container {
+          max-width: 700px;
+          margin: 0 auto 2rem;
+        }
+        .search-bar {
+          position: relative;
+          display: flex;
+          align-items: center;
+          background: white;
+          border: 2px solid #e0e0e0;
+          border-radius: 50px;
+          padding: 0.75rem 1.5rem;
+          transition: all 0.3s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .search-bar:focus-within {
+          border-color: var(--color-primary);
+          box-shadow: 0 4px 12px rgba(255,140,0,0.15);
+        }
+        .search-icon {
+          color: #999;
+          margin-right: 10px;
+          flex-shrink: 0;
+        }
+        .search-input {
+          flex: 1;
+          border: none;
+          outline: none;
+          font-size: 1rem;
+          color: var(--color-text-main);
+          background: transparent;
+        }
+        .search-input::placeholder {
+          color: #999;
+        }
+        .clear-search {
+          background: none;
+          border: none;
+          color: #999;
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          border-radius: 50%;
+          transition: all 0.2s;
+        }
+        .clear-search:hover {
+          background: #f0f0f0;
+          color: #666;
+        }
+
+        /* Results Info */
+        .results-info {
+          text-align: center;
+          margin-bottom: 1.5rem;
+          color: #666;
+          font-size: 0.95rem;
+        }
+
         .filters {
           display: flex;
           justify-content: center;
@@ -248,9 +393,22 @@ function App() {
 
         .product-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 2rem;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 1.5rem;
           margin-bottom: 4rem;
+        }
+
+        @media (min-width: 768px) {
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+          }
+        }
+
+        @media (min-width: 1200px) {
+          .product-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
         }
 
         .product-card {
@@ -303,6 +461,29 @@ function App() {
             font-weight: 800;
         }
         
+        .edit-btn {
+            position: absolute;
+            bottom: 1rem;
+            right: 3.5rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        .edit-btn:hover {
+            transform: scale(1.1);
+            background: #66BB6A;
+        }
+
         .delete-btn {
             position: absolute;
             bottom: 1rem;
@@ -390,6 +571,25 @@ function App() {
           padding: 3rem;
           font-size: 1.2rem;
           color: var(--color-text-light);
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 4rem 2rem;
+          color: #999;
+        }
+        .empty-state svg {
+          opacity: 0.3;
+          margin-bottom: 1rem;
+        }
+        .empty-state h3 {
+          font-size: 1.5rem;
+          color: #666;
+          margin-bottom: 0.5rem;
+        }
+        .empty-state p {
+          color: #999;
+          margin-bottom: 1rem;
         }
 
         .floating-cart-btn {

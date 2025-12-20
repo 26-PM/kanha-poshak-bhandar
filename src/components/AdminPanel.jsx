@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { PlusCircle, Lock, Upload, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlusCircle, Lock, Upload, Loader, Edit } from 'lucide-react';
 import { supabase } from '../supabase';
 
-export function AdminPanel({ onAddProduct }) {
+export function AdminPanel({ onAddProduct, onUpdateProduct, editingProduct, onCancelEdit }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
     const [loginError, setLoginError] = useState('');
@@ -18,6 +18,22 @@ export function AdminPanel({ onAddProduct }) {
         description: '',
         product_code: ''
     });
+
+    // Populate form when editing
+    useEffect(() => {
+        if (editingProduct) {
+            setFormData({
+                name: editingProduct.name || '',
+                price: editingProduct.price?.toString() || '',
+                discount: editingProduct.discount?.toString() || '0',
+                category: editingProduct.category || 'Poshak',
+                imageFile: null,
+                preview: editingProduct.image || '',
+                description: editingProduct.description || '',
+                product_code: editingProduct.product_code || ''
+            });
+        }
+    }, [editingProduct]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -47,7 +63,7 @@ export function AdminPanel({ onAddProduct }) {
 
         setUploading(true);
         try {
-            let imageUrl = 'https://images.unsplash.com/photo-1628882835978-29938b823b16?w=500&auto=format&fit=crop&q=60';
+            let imageUrl = editingProduct ? editingProduct.image : 'https://images.unsplash.com/photo-1628882835978-29938b823b16?w=500&auto=format&fit=crop&q=60';
 
             // 1. Upload Image if exists
             if (formData.imageFile) {
@@ -67,32 +83,50 @@ export function AdminPanel({ onAddProduct }) {
                 imageUrl = publicUrl;
             }
 
-            // 3. Insert into Database
-            const { data, error: dbError } = await supabase
-                .from('products')
-                .insert([
-                    {
-                        name: formData.name,
-                        price: parseFloat(formData.price),
-                        discount: parseInt(formData.discount) || 0,
-                        category: formData.category,
-                        description: formData.description,
-                        image: imageUrl,
-                        product_code: formData.product_code
-                    }
-                ])
-                .select();
+            const productData = {
+                name: formData.name,
+                price: parseFloat(formData.price),
+                discount: parseInt(formData.discount) || 0,
+                category: formData.category,
+                description: formData.description,
+                image: imageUrl,
+                product_code: formData.product_code
+            };
 
-            if (dbError) throw dbError;
+            if (editingProduct) {
+                // UPDATE existing product
+                const { data, error: dbError } = await supabase
+                    .from('products')
+                    .update(productData)
+                    .eq('id', editingProduct.id)
+                    .select();
 
-            if (data && data.length > 0) {
-                onAddProduct(data[0]);
-                setFormData({ name: '', price: '', discount: '0', category: 'Poshak', imageFile: null, preview: '', description: '', product_code: '' });
-                alert('Success! Product added to Kanha Poshak Bhandar database.');
+                if (dbError) throw dbError;
+
+                if (data && data.length > 0) {
+                    onUpdateProduct(data[0]);
+                    setFormData({ name: '', price: '', discount: '0', category: 'Poshak', imageFile: null, preview: '', description: '', product_code: '' });
+                    alert('Success! Product updated.');
+                    if (onCancelEdit) onCancelEdit();
+                }
+            } else {
+                // INSERT new product
+                const { data, error: dbError } = await supabase
+                    .from('products')
+                    .insert([productData])
+                    .select();
+
+                if (dbError) throw dbError;
+
+                if (data && data.length > 0) {
+                    onAddProduct(data[0]);
+                    setFormData({ name: '', price: '', discount: '0', category: 'Poshak', imageFile: null, preview: '', description: '', product_code: '' });
+                    alert('Success! Product added to Kanha Poshak Bhandar database.');
+                }
             }
 
         } catch (error) {
-            console.error('Error adding product:', error);
+            console.error('Error saving product:', error);
             alert(`Error: ${error.message}`);
         } finally {
             setUploading(false);
@@ -190,8 +224,8 @@ export function AdminPanel({ onAddProduct }) {
             <div className="container">
                 <div className="admin-card">
                     <div className="admin-header">
-                        <PlusCircle size={24} color="white" />
-                        <h3>Add New Product</h3>
+                        {editingProduct ? <Edit size={24} color="white" /> : <PlusCircle size={24} color="white" />}
+                        <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
                     </div>
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
@@ -247,6 +281,7 @@ export function AdminPanel({ onAddProduct }) {
                                     <option>Poshak</option>
                                     <option>Accessories</option>
                                     <option>Idols</option>
+                                    <option>Tasveer</option>
                                     <option>Other</option>
                                 </select>
                             </div>
@@ -286,15 +321,27 @@ export function AdminPanel({ onAddProduct }) {
                             ></textarea>
                         </div>
 
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={uploading}>
-                            {uploading ? (
-                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                    <Loader className="spin" size={20} /> Uploading...
-                                </span>
-                            ) : (
-                                'Add Product to Shop'
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={uploading}>
+                                {uploading ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <Loader className="spin" size={20} /> {editingProduct ? 'Updating...' : 'Uploading...'}
+                                    </span>
+                                ) : (
+                                    editingProduct ? 'Update Product' : 'Add Product to Shop'
+                                )}
+                            </button>
+                            {editingProduct && onCancelEdit && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={onCancelEdit}
+                                    style={{ flex: 0.5 }}
+                                >
+                                    Cancel
+                                </button>
                             )}
-                        </button>
+                        </div>
                     </form>
                 </div>
             </div >
@@ -389,6 +436,19 @@ export function AdminPanel({ onAddProduct }) {
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
         }
       `}</style>
         </div >
